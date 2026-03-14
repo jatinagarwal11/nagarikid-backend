@@ -14,6 +14,11 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({ message: 'NagarikID Backend API', status: 'running' });
+});
+
 // Login
 app.post('/login', async (req, res) => {
   const { national_id, password } = req.body;
