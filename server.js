@@ -182,7 +182,7 @@ function buildResponse(user, profile, businessType) {
    Health
    ═════════════════════════════════════════════════════════ */
 app.get('/', (req, res) => {
-  res.json({ message: 'NagarikID Backend API', status: 'running' });
+  res.json({ message: 'NagarikAPI Backend', status: 'running' });
 });
 
 /* ═════════════════════════════════════════════════════════
