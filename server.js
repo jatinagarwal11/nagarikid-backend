@@ -140,20 +140,21 @@ function buildResponse(user, profile, businessType) {
   if (businessType === 'pharmacy') {
     const prescriptionValid = profile && profile.has_valid_prescription
       && new Date(profile.prescription_expiry) > new Date();
-    const approved = prescriptionValid && profile.restricted_drug_eligible;
+    const allowedDrugs = (profile && profile.allowed_drugs) || [];
+    const approved = prescriptionValid && allowedDrugs.length > 0;
     return {
       verified: true,
       business_type: 'pharmacy',
       decision: approved ? 'approved' : 'denied',
       reason: approved
-        ? 'Valid prescription — drug dispensing authorised'
-        : !prescriptionValid ? 'Prescription invalid or expired' : 'Not eligible for restricted drugs',
+        ? `Authorised for ${allowedDrugs.length} restricted drug${allowedDrugs.length > 1 ? ' categories' : ''}`
+        : !prescriptionValid ? 'Prescription invalid or expired' : 'No restricted drugs authorised',
       data: {
         full_name: user.name,
         age,
         prescription_status: prescriptionValid ? 'valid' : 'invalid / expired',
         prescription_expiry: profile ? profile.prescription_expiry : null,
-        restricted_drug_eligible: profile ? profile.restricted_drug_eligible : false,
+        allowed_drugs: allowedDrugs,
         doctor_authorization: profile ? profile.doctor_authorization : null,
         recent_drug_flag: profile && profile.recent_drug_purchase_date
           ? (Date.now() - new Date(profile.recent_drug_purchase_date).getTime()) < 7 * 86400000
@@ -270,7 +271,7 @@ app.get('/citizen/knowledge-graph', async (req, res) => {
     { id: 'identity', label: 'Core Identity', data: { name: user.name, national_id: user.national_id, dob: user.dob, age, gender: p.gender || 'N/A', photo_url: user.photo_url } },
     { id: 'kyc', label: 'KYC', data: { status: p.kyc_verified ? 'Verified' : 'Unverified', verified_date: p.kyc_verified_date, risk_level: p.kyc_risk_level || 'pending' } },
     { id: 'address', label: 'Address', data: { province: p.province, district: p.district, municipality: p.municipality, ward: p.ward } },
-    { id: 'prescriptions', label: 'Prescriptions', data: { has_valid: p.has_valid_prescription || false, expiry: p.prescription_expiry, restricted_eligible: p.restricted_drug_eligible || false, doctor: p.doctor_authorization } },
+    { id: 'prescriptions', label: 'Drug Permissions', data: { has_valid_prescription: p.has_valid_prescription || false, expiry: p.prescription_expiry, allowed_drugs: p.allowed_drugs || [], doctor: p.doctor_authorization } },
     { id: 'vehicles', label: 'Vehicles', data: { license: p.license_number || 'None', registration: p.vehicle_registration || 'None' } },
     { id: 'audit', label: 'Access History', data: { total_accesses: auditCount || 0, last_access: lastAudit && lastAudit[0] ? lastAudit[0].timestamp : 'Never' } },
   ];
@@ -479,7 +480,7 @@ app.get('/admin/citizen/:id/knowledge-graph', async (req, res) => {
     { id: 'identity', label: 'Core Identity', data: { name: user.name, national_id: user.national_id, dob: user.dob, age, gender: p.gender || 'N/A', photo_url: user.photo_url } },
     { id: 'kyc', label: 'KYC', data: { status: p.kyc_verified ? 'Verified' : 'Unverified', verified_date: p.kyc_verified_date, risk_level: p.kyc_risk_level || 'pending' } },
     { id: 'address', label: 'Address', data: { province: p.province, district: p.district, municipality: p.municipality, ward: p.ward } },
-    { id: 'prescriptions', label: 'Prescriptions', data: { has_valid: p.has_valid_prescription || false, expiry: p.prescription_expiry, restricted_eligible: p.restricted_drug_eligible || false, doctor: p.doctor_authorization } },
+    { id: 'prescriptions', label: 'Drug Permissions', data: { has_valid_prescription: p.has_valid_prescription || false, expiry: p.prescription_expiry, allowed_drugs: p.allowed_drugs || [], doctor: p.doctor_authorization } },
     { id: 'vehicles', label: 'Vehicles', data: { license: p.license_number || 'None', registration: p.vehicle_registration || 'None' } },
     { id: 'audit', label: 'Access History', data: { total_accesses: count || 0, last_access: last && last[0] ? last[0].timestamp : 'Never' } },
   ];
