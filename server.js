@@ -34,6 +34,45 @@ app.post('/login', async (req, res) => {
   res.json({ token });
 });
 
+// Register new user
+app.post('/register', async (req, res) => {
+  const { national_id, name, dob, photo_url, password } = req.body;
+  
+  // Check if user already exists
+  const { data: existingUser } = await supabase
+    .from('users')
+    .select('id')
+    .eq('national_id', national_id)
+    .single();
+    
+  if (existingUser) {
+    return res.status(400).json({ error: 'User with this National ID already exists' });
+  }
+  
+  // Hash password
+  const password_hash = await bcrypt.hash(password, 10);
+  
+  // Insert new user
+  const { data, error } = await supabase
+    .from('users')
+    .insert({
+      national_id,
+      name,
+      dob,
+      photo_url,
+      password_hash
+    })
+    .select()
+    .single();
+    
+  if (error) {
+    console.error('Registration error:', error);
+    return res.status(500).json({ error: 'Failed to register user' });
+  }
+  
+  res.json({ message: 'User registered successfully', user: data });
+});
+
 // Generate token
 app.get('/generate-token', (req, res) => {
   const authHeader = req.headers.authorization;
